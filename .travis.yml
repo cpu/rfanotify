@@ -1,0 +1,42 @@
+os: linux
+language: rust
+cache: cargo
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+env:
+  global:
+  - RUST_BACKTRACE=1
+
+jobs:
+  fast_finish: true
+  allow_failures:
+  - rust: nightly
+
+  # Only run the formatting check for stable
+  include:
+  - name: 'Rust: format check'
+    rust: stable
+    install:
+    - rustup component add rustfmt
+    script:
+    - cargo fmt --verbose --all -- --check
+
+    # Only run the style check for stable
+  - name: 'Rust: style check'
+    rust: stable
+    install:
+    - rustup component add clippy
+    script:
+    - cargo clippy --verbose --all -- -D warnings
+
+script:
+  - cargo build --verbose --all
+  - cargo test --verbose --all
+
+notifications:
+  email:
+    on_success: never
