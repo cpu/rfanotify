@@ -5,6 +5,8 @@
 
 use nix::sys::fanotify::*;
 use nix::unistd::close;
+//use semver_parser::range;
+use semver_parser::version;
 use std::env;
 use std::fs;
 
@@ -58,6 +60,35 @@ fn handle_events(fd: Fanotify) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
+// can_mark_full_filesystem returns true if the Linux kernel release reported by uname is >=
+// 4.20.0. This can be used to gate providing FAN_MARK_FILESYSTEM to `fanotify_mark`.
+fn can_mark_full_filesystem() -> bool {
+    // Using FAN_MARK_FILESYSTEM requires a Linux kernel version >= 4.20.0
+    // NOTE: unwrap() is safe here. The parsed version is a well formed constant.
+    let mark_filesystem_requires = version::parse("4.20.0").unwrap();
+
+    // Find the current kernel version using the uname release field. This may come with extra junk
+    // at the end after a `-`, e.g. `4.4.0-174-generic`, so split the release field by '-' and
+    // collect the parts into a vec.
+    let uname = nix::sys::utsname::uname();
+    let release_parts: Vec<&str> = uname.release().split('-').collect();
+
+    // Parse up to the first '-', if the resulting version is >= mark_filesystem_requires per
+    // semver then return true, otherwise if anything fails to parse or the version isn't >=
+    // mark_filesystem_requires, return false
+    release_parts
+        .first()
+        .and_then(|x| version::parse(x).ok())
+        .map(|x| {
+            if x >= mark_filesystem_requires {
+                Some(x)
+            } else {
+                None
+            }
+        })
+        .is_some()
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args();
     // skip program name
@@ -77,12 +108,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         EventFlags::O_RDONLY | EventFlags::O_LARGEFILE,
     )?;
 
-    /* Mark the mount for:
+    // If the current kernel version is new enough, use FAN_MARK_FILESYSTEM instead of
+    // FAN_MARK_MOUNT.
+    let mark_flags = if can_mark_full_filesystem() {
+        MarkFlags::FAN_MARK_ADD | MarkFlags::FAN_MARK_FILESYSTEM
+    } else {
+        MarkFlags::FAN_MARK_ADD | MarkFlags::FAN_MARK_MOUNT
+    };
+
+    /* Mark the mount|filesystem for:
      * - permission events before opening files
      * - notification events after closing a write-enabled file descriptor
      */
     fd.mark(
-        MarkFlags::FAN_MARK_ADD | MarkFlags::FAN_MARK_MOUNT,
+        mark_flags,
         MaskFlags::FAN_OPEN_PERM | MaskFlags::FAN_CLOSE_WRITE,
         AT_FDCWD,
         input_path.as_str(),

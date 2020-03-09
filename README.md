@@ -8,6 +8,7 @@
 * [Building](#Building)
 * [Usage](#Usage)
 * [Example](#Example)
+* [Filesystem vs Mount](#Filesystem-vs-Mount)
 * [Nix and Libc forks](#Nix-and-Libc-forks)
   * [Updates to the fanotify API](#Updates-to-the-fanotify-API)
 * [See Also](#See-Also)
@@ -17,15 +18,15 @@
 This repository is a Rust port of the Linux [man-pages project]'s [example
 C program][fanotify-example] for the Linux `fanotify` API. It offers a simple
 program called `rfanotify` that responds to and logs permission requests to
-open a file on a monitored filesystem mount. It also logs when a process writes
-a file on a monitored filesystem mount.
+open a file on a monitored filesystem or mount. It also logs when a process
+writes a file on a monitored filesystem/mount.
 
 The `fanotify` API is a linux-specific API for notification and interception of
 filesystem events. In some ways it is similar to `inotify`, but more powerful.
 Unlike `inotify` based approaches to filesystem monitoring using `fanotify` has
 several advantages:
 
-* An entire filesystem mount can be monitored with very low overhead.
+* An entire filesystem/mount can be monitored with very low overhead.
 * The `pid` of the program causing the filesystem event is known.
 * The event handling program can **deny** file opens for the monitored
   filesystem.
@@ -36,6 +37,8 @@ For more information, see:
 * [`man 7 fanotify`][man-fanotify].
 * [`man 2 fanotify_init`][man-fanotify_init].
 * [`man 2 fanotify_mark`][man-fanotify_mark].
+
+**NOTE: This is my first attempt at writing Rust and it's likely not especially idomatic/clean. Kind PRs/suggestions welcome.**
 
 [man-pages project]: https://www.kernel.org/doc/man-pages/
 [fanotify-example]: https://gist.github.com/cpu/b68e7bbdf60619c1cdf1ebc27b1e4ae5
@@ -69,8 +72,8 @@ After [building from source](#Building), run:
 sudo ./target/release/rfanotify <directory>
 ```
 
-If no explicit `directory` argument is provided the mount of the current
-working directory is monitored.
+If no explicit `directory` argument is provided the filesystem/mount of the
+current working directory is monitored.
 
 You can avoid running `rfanotify` as `root` by instead giving the binary
 the `CAP_SYS_ADMIN` capability, and then running it as a normal user:
@@ -80,9 +83,9 @@ sudo setcap cap_sys_admin+eip target/release/rfanotify
 ./target/release/rfanotify <directory>
 ```
 
-The `rfanotify` program adds a `fanotify` watch on the entire mount backing
-`<directory>`. When a process tries to open a file on the monitored
-filesystem mount a `FAN_OPEN_PERM` event is received and logged by `rfanotify`
+The `rfanotify` program adds a `fanotify` watch on the entire filesystem/mount
+backing `<directory>`. When a process tries to open a file on the monitored
+filesystem/mount a `FAN_OPEN_PERM` event is received and logged by `rfanotify`
 and a `FAN_ALLOW` response is returned, allowing the open to complete. When a
 process closes a file a `FAN_CLOSE_WRITE` event is received and logged.
 
@@ -135,6 +138,19 @@ The full program output can be viewed [here][example-output].
 
 [example-output]: https://github.com/cpu/rfanotify/blob/master/rfanotify.eg.output.txt
 
+### Filesystem vs Mount
+
+On Linux kernel versions >= 4.2.0 `rfanotify` uses `fanotify_mark` with the
+`FAN_MARK_FILESYSTEM` flag. On older versions `FAN_MARK_MOUNT` is used instead.
+When marking a filesystem **mount** instead of a filesystem it is possible
+events will be missed.
+
+For example, consider if the device `/dev/sdb1` is mounted to `/mnt/example` as well as having a bind mount to `/mnt/example-b` (e.g. `mount --bind /mnt/example /mnt/example-b`).
+
+If `rfanotify /mnt/example` is run on a Linux kernel version >= 4.2.0 then events will be logged regardless of which mount is used. (e.g editing `/mnt/example/foo.txt` or `/mnt/example-b/foo.txt` will both log `rfanotify` events). The **filesystem** for `/mnt/example` is monitored.
+
+If `rfanotify /mnt/example` is run on a Linux kernel version < 4.2.0 then events will be logged only for the `/mnt/example` mount. (e.g editing `/mnt/example/foo.txt` will log `rfanotify` events but editing `/mnt/example-b/foo.txt` will **not**. Only the **mount** of `/mnt/example` is monitored.
+
 ### Nix and Libc forks
 
 While the `fanotify` system calls have been available since Linux 2.6.37 there
@@ -154,7 +170,7 @@ types/bindings/wrappers:
 The `fanotify` API has been updated several times since it was enabled in Linux
 2.6.37. The `rfanotify` code was written using the man page content from
 release 4.04 of the Linux [man-pages project] and tested on Linux kernel version
-4.4.0.
+4.4.0 and 5.0.0.
 
 [Linux 4.20] added `FAN_MARK_FILESYSTEM` to "enable monitoring of filesystem
 events on all filesystem objects regardless of the mount where event was
@@ -172,8 +188,9 @@ filesystem object correlated with an event (e.g. a monitored directory or
 mount).
 
 The forked `libc` and `nix` crates used by this project do not (yet) implement
-any of these updates. This project does not (yet) port the `fanotify_fid.c`
-example C program included in release 5.05 of the Linux [man-pages project].
+any of these updates (except for `FAN_MARK_FILESYSTEM`). This project does not
+(yet) port the `fanotify_fid.c` example C program included in release 5.05 of
+the Linux [man-pages project].
 
 [Linux 4.20]: https://kernelnewbies.org/Linux_4.20#Core_.28various.29
 [Linux 5.0]: https://kernelnewbies.org/Linux_5.0#Core_.28various.29

@@ -21,12 +21,12 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "libc"
 version = "0.2.67"
-source = "git+https://github.com/cpu/libc?branch=cpu-fanotify-wip#dd40a0c5b524f4ac508938ac73ff6e32c1fac773"
+source = "git+https://github.com/cpu/libc?branch=cpu-fanotify-wip#2cb61f258144e0fcb788f2acafe38b1feb0ad512"
 
 [[package]]
 name = "nix"
 version = "0.17.0"
-source = "git+https://github.com/cpu/nix?branch=cpu-fanotify-wip#ef208738c90ecf0c557129ec7361c64ac9bcaa11"
+source = "git+https://github.com/cpu/nix?branch=cpu-fanotify-wip#949d9f1986ae6b88f9f7a8851a1c2d7a3955017c"
 dependencies = [
  "bitflags",
  "cc",
@@ -40,7 +40,14 @@ name = "rfanotify"
 version = "0.1.0"
 dependencies = [
  "nix",
+ "semver-parser",
 ]
+
+[[package]]
+name = "semver-parser"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b46e1121e8180c12ff69a742aabc4f310542b6ccb69f1691689ac17fdf8618aa"
 
 [[package]]
 name = "void"
