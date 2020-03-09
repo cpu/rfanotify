@@ -1,6 +1,7 @@
-# Rust fanotify example &emsp; ![Travis CI]
+# Rust fanotify example &emsp; [![Travis Badge]][Travis CI]
 
-[Travis CI]: https://img.shields.io/travis/com/cpu/rfanotify
+[Travis Badge]: https://img.shields.io/travis/com/cpu/rfanotify
+[Travis CI]: https://travis-ci.com/cpu/rfanotify
 
 ---
 
