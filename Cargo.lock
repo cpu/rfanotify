@@ -26,7 +26,6 @@ source = "git+https://github.com/cpu/libc?branch=cpu-fanotify-wip#2cb61f258144e0
 [[package]]
 name = "nix"
 version = "0.17.0"
-source = "git+https://github.com/cpu/nix?branch=cpu-fanotify-wip#949d9f1986ae6b88f9f7a8851a1c2d7a3955017c"
 dependencies = [
  "bitflags",
  "cc",

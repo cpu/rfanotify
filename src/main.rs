@@ -60,9 +60,9 @@ fn handle_events(fd: Fanotify) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-// can_mark_full_filesystem returns true if the Linux kernel release reported by uname is >=
-// 4.20.0. This can be used to gate providing FAN_MARK_FILESYSTEM to `fanotify_mark`.
-fn can_mark_full_filesystem() -> bool {
+// can_mark_full_filesystem returns Some with a kernel version if the Kernel is >= 4.20.0 and can
+// use FAN_MARK_FILESYSTEM with `fanotify_mark`, or None if the Kernel is too old.
+fn can_mark_full_filesystem() -> Option<semver_parser::version::Version> {
     // Using FAN_MARK_FILESYSTEM requires a Linux kernel version >= 4.20.0
     // NOTE: unwrap() is safe here. The parsed version is a well formed constant.
     let mark_filesystem_requires = version::parse("4.20.0").unwrap();
@@ -79,14 +79,13 @@ fn can_mark_full_filesystem() -> bool {
     release_parts
         .first()
         .and_then(|x| version::parse(x).ok())
-        .map(|x| {
+        .and_then(|x| {
             if x >= mark_filesystem_requires {
                 Some(x)
             } else {
                 None
             }
         })
-        .is_some()
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -110,10 +109,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // If the current kernel version is new enough, use FAN_MARK_FILESYSTEM instead of
     // FAN_MARK_MOUNT.
-    let mark_flags = if can_mark_full_filesystem() {
-        MarkFlags::FAN_MARK_ADD | MarkFlags::FAN_MARK_FILESYSTEM
-    } else {
-        MarkFlags::FAN_MARK_ADD | MarkFlags::FAN_MARK_MOUNT
+    let mark_flags = match can_mark_full_filesystem() {
+        Some(_) => MarkFlags::FAN_MARK_ADD | MarkFlags::FAN_MARK_FILESYSTEM,
+        None => MarkFlags::FAN_MARK_ADD | MarkFlags::FAN_MARK_MOUNT,
     };
 
     /* Mark the mount|filesystem for:

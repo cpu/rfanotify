@@ -16,5 +16,6 @@ semver-parser = "0.9.0"
 # upstreamed yet.
 #
 # TODO(@cpu): Delete this once nix and libc changes are both upstreamed.
-nix = { git = 'https://github.com/cpu/nix', branch = 'cpu-fanotify-wip' }
+#nix = { git = 'https://github.com/cpu/nix', branch = 'cpu-fanotify-wip' }
+nix = { path = '/home/daniel/Code/nix' }
 libc = { git = 'https://github.com/cpu/libc', branch = 'cpu-fanotify-wip' }
