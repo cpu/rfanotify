@@ -4,11 +4,9 @@
  */
 
 use nix::sys::fanotify::*;
-use nix::unistd::close;
-//use semver_parser::range;
 use semver_parser::version;
-use std::env;
-use std::fs;
+use std::os::unix::io::AsRawFd;
+use std::{env, fs};
 
 fn handle_events(fd: Fanotify) -> Result<(), Box<dyn std::error::Error>> {
     /* Loop while events can be read from fanotify file descriptor */
@@ -17,16 +15,16 @@ fn handle_events(fd: Fanotify) -> Result<(), Box<dyn std::error::Error>> {
         /* e.fd contains either None, indicating a queue overflow, or a file descriptor (a
          * nonnegative integer). Here we simply ignore queue overflow (by filtering out cases where
          * `e.fd` is None). */
-        for e in fd.read_events()?.iter().filter(|e| e.fd.is_some()) {
+        for e in fd.read_events()?.iter().filter(|e| e.file.is_some()) {
             // NOTE(@cpu): safe to unconditionally unwrap here because of `filter` above.
-            let event_fd = e.fd.unwrap();
+            let f = e.file.as_ref().unwrap();
 
             if e.mask.contains(MaskFlags::FAN_OPEN_PERM) {
                 print!("FAN_OPEN_PERM: ");
 
                 /* Allow file to be opened */
                 fd.respond(FanotifyResponse {
-                    fd: event_fd,
+                    fd: f.as_raw_fd(),
                     response: FanotifyPermissionResponse::FAN_ALLOW,
                 })?;
             }
@@ -36,7 +34,7 @@ fn handle_events(fd: Fanotify) -> Result<(), Box<dyn std::error::Error>> {
             }
 
             /* Retrieve and print pathname of the accessed file */
-            let procfd_path = fs::read_link(format!("/proc/self/fd/{}", event_fd))?;
+            let procfd_path = fs::read_link(format!("/proc/self/fd/{}", f.as_raw_fd()))?;
             print!("File {} ", procfd_path.display());
 
             /* Retrieve and print exe of the accessing pid (if possible) */
@@ -50,11 +48,6 @@ fn handle_events(fd: Fanotify) -> Result<(), Box<dyn std::error::Error>> {
             };
             println!();
 
-            /* Close the file descriptor of the event */
-            if let Err(err) = close(event_fd) {
-                eprintln!("err closing fd {}: {}", event_fd, err);
-            }
-
             /* Advance to the next event */
         }
     }
@@ -62,7 +55,7 @@ fn handle_events(fd: Fanotify) -> Result<(), Box<dyn std::error::Error>> {
 
 // can_mark_full_filesystem returns Some with a kernel version if the Kernel is >= 4.20.0 and can
 // use FAN_MARK_FILESYSTEM with `fanotify_mark`, or None if the Kernel is too old.
-fn can_mark_full_filesystem() -> Option<semver_parser::version::Version> {
+fn can_mark_full_filesystem() -> Option<version::Version> {
     // Using FAN_MARK_FILESYSTEM requires a Linux kernel version >= 4.20.0
     // NOTE: unwrap() is safe here. The parsed version is a well formed constant.
     let mark_filesystem_requires = version::parse("4.20.0").unwrap();
