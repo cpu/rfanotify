@@ -163,8 +163,8 @@ types/bindings/wrappers:
 * A fork of the `libc` crate is used to [add `fanotify` bindings][libc-fanotify].
 * A fork of the `nix` crate [adds safe wrappers][nix-fanotify].
 
-[libc-fanotify]: https://github.com/cpu/libc/commit/8948e46ec45f01e88a3792b1d8c594a9b9c95195
-[nix-fanotify]: https://github.com/cpu/nix/commit/d4b52fdfe2219be2c508168b22c8dfcf44d352ce
+[libc-fanotify]: https://github.com/cpu/libc/commit/07c1e44f498a2ceae603a6f616410f516c1a4243
+[nix-fanotify]: https://github.com/cpu/nix/commit/585314d667026bf5e231394fbb2a4b7fa320b774
 
 #### Updates to the fanotify API
 
