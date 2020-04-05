@@ -10,8 +10,8 @@
 * [Usage](#Usage)
 * [Example](#Example)
 * [Filesystem vs Mount](#Filesystem-vs-Mount)
-* [Nix and Libc forks](#Nix-and-Libc-forks)
-  * [Updates to the fanotify API](#Updates-to-the-fanotify-API)
+* [Nix and Libc versions](#Nix-and-Libc-versions)
+* [Updates to the fanotify API](#Updates-to-the-fanotify-API)
 * [See Also](#See-Also)
 
 ### About
@@ -152,21 +152,22 @@ If `rfanotify /mnt/example` is run on a Linux kernel version >= 4.2.0 then event
 
 If `rfanotify /mnt/example` is run on a Linux kernel version < 4.2.0 then events will be logged only for the `/mnt/example` mount. (e.g editing `/mnt/example/foo.txt` will log `rfanotify` events but editing `/mnt/example-b/foo.txt` will **not**. Only the **mount** of `/mnt/example` is monitored.
 
-### Nix and Libc forks
+### Nix and Libc versions
 
-While the `fanotify` system calls have been available since Linux 2.6.37 there
-are no bindings in the Rust `libc` crate, or any wrappers in the `nix` crate.
+The `fanotify` system calls have been available since Linux 2.6.37 but FFI
+bindings for Rust were not available in the `nix` and `libc` crates as of
+March 2020.
 
-This project uses forks of both crates that were extended with the required
-types/bindings/wrappers:
+The required FFI bindings were [added to the `libc` crate][libc-fanotify] in
+April 2020 but are not yet in a released version. The `nix` wrappers are a work
+in progress and require using a [fork of the `nix` crate][nix-fork] that has
+rough initial [fanotify support][nix-fanotify].
 
-* A fork of the `libc` crate is used to [add `fanotify` bindings][libc-fanotify].
-* A fork of the `nix` crate [adds safe wrappers][nix-fanotify].
+[libc-fanotify]: https://github.com/rust-lang/libc/commit/5c7a82a1c8276a0ea67cdbdc5a917ec88bb1082a
+[nix-fork]: https://github.com/cpu/nix
+[nix-fanotify]: https://github.com/cpu/nix/commit/3bbe6f0836d02bf61e1af6e214ed970e3dcfb7df
 
-[libc-fanotify]: https://github.com/cpu/libc/commit/07c1e44f498a2ceae603a6f616410f516c1a4243
-[nix-fanotify]: https://github.com/cpu/nix/commit/585314d667026bf5e231394fbb2a4b7fa320b774
-
-#### Updates to the fanotify API
+### Updates to the fanotify API
 
 The `fanotify` API has been updated several times since it was enabled in Linux
 2.6.37. The `rfanotify` code was written using the man page content from
