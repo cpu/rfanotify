@@ -165,7 +165,7 @@ rough initial [fanotify support][nix-fanotify].
 
 [libc-fanotify]: https://github.com/rust-lang/libc/commit/5c7a82a1c8276a0ea67cdbdc5a917ec88bb1082a
 [nix-fork]: https://github.com/cpu/nix
-[nix-fanotify]: https://github.com/cpu/nix/commit/3bbe6f0836d02bf61e1af6e214ed970e3dcfb7df
+[nix-fanotify]: https://github.com/cpu/nix/commit/acea0d50ce48dacd67261740e16b47cdf38d769a
 
 ### Updates to the fanotify API
 
