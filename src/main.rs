@@ -8,7 +8,7 @@ use semver_parser::version;
 use std::os::unix::io::AsRawFd;
 use std::{env, fs};
 
-fn handle_events(fd: Fanotify) -> Result<(), Box<dyn std::error::Error>> {
+fn handle_events(fd: &mut Fanotify) -> Result<(), Box<dyn std::error::Error>> {
     /* Loop while events can be read from fanotify file descriptor */
     loop {
         /* Read some events */
@@ -93,7 +93,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     /* Create the file descriptor for accessing the fanotify API */
-    let fd = Fanotify::init(
+    let mut fd = Fanotify::init(
         // TODO(@cpu): should use FAN_NONBLOCK like the original example. See
         // https://github.com/cpu/rfanotify/issues/2
         InitFlags::FAN_CLOEXEC | InitFlags::FAN_CLASS_CONTENT,
@@ -119,7 +119,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     /* Fanotify events may be available */
-    handle_events(fd)?;
+    handle_events(&mut fd)?;
 
     println!("Listening for events stopped.");
     Ok(())
