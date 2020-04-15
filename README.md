@@ -159,13 +159,14 @@ bindings for Rust were not available in the `nix` and `libc` crates as of
 March 2020.
 
 The required FFI bindings were [added to the `libc` crate][libc-fanotify] in
-April 2020 but are not yet in a released version. The `nix` wrappers are a work
-in progress and require using a [fork of the `nix` crate][nix-fork] that has
-rough initial [fanotify support][nix-fanotify].
+April 2020 and released as part of [v0.2.69][libc-fanotify-release].
+The `nix` wrappers are a work in progress and require using a [fork of the `nix`
+crate][nix-fork] that has rough initial [fanotify support][nix-fanotify].
 
 [libc-fanotify]: https://github.com/rust-lang/libc/commit/5c7a82a1c8276a0ea67cdbdc5a917ec88bb1082a
+[libc-fanotify-release]: https://github.com/rust-lang/libc/releases/tag/0.2.69
 [nix-fork]: https://github.com/cpu/nix
-[nix-fanotify]: https://github.com/cpu/nix/commit/acea0d50ce48dacd67261740e16b47cdf38d769a
+[nix-fanotify]: 1604fdb23871ae295f57d1770e59d4743b209907
 
 ### Updates to the fanotify API
 
